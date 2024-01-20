@@ -51,17 +51,28 @@ export async function getServerSideProps(ctx) {
   await mongooseConnect();
   const products = await Product.find({}, null, { sort: { _id: -1 } });
   const { userId } = getAuth(ctx.req);
-  const user = await clerkClient.users.getUser(userId);
-  const wishedProducts = user
-    ? await WishedProduct.find({
-        userEmail: user.primaryEmailAddressId,
-        product: products.map(p => p._id.toString()),
-      })
-    : [];
-  return {
-    props: {
-      products: JSON.parse(JSON.stringify(products)),
-      wishedProducts: wishedProducts.map(i => i.product.toString()),
-    },
-  };
+
+  if (userId) {
+    const user = await clerkClient.users.getUser(userId);
+    const wishedProducts = user
+      ? await WishedProduct.find({
+          userEmail: user.primaryEmailAddressId,
+          product: products.map(p => p._id.toString()),
+        })
+      : [];
+
+    return {
+      props: {
+        products: JSON.parse(JSON.stringify(products)),
+        wishedProducts: wishedProducts.map(i => i.product.toString()),
+      },
+    };
+  } else {
+    return {
+      props: {
+        products: JSON.parse(JSON.stringify(products)),
+        wishedProducts: [],
+      },
+    };
+  }
 }
